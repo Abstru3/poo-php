@@ -10,10 +10,9 @@ echo sprintf(
     Encounter::probabilityAgainst($greg->level, $jade->level) * 100
 ) . PHP_EOL;
 
-Encounter::setNewLevel($greg->level, $jade->level, RESULT_WINNER);
-Encounter::setNewLevel($jade->level, $greg->level, RESULT_LOSER);
+Encounter::setNewLevel($greg->level, $jade->level, Encounter::RESULT_WINNER);
+Encounter::setNewLevel($jade->level, $greg->level, Encounter::RESULT_LOSER);
 
-// Affichage des nouveaux niveaux des joueurs
 echo sprintf(
     'Les niveaux des joueurs ont évolué vers %s pour Greg et %s pour Jade',
     $greg->level,
