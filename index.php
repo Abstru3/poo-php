@@ -1,26 +1,88 @@
 <?php
-require_once 'player.php';
-require_once 'encounter.php';
 
-$greg = new Player(400);
-$jade = new Player(800);
+declare(strict_types=1);
 
-echo sprintf(
-    'Greg a %.2f%% chance de gagner face à Jade' . PHP_EOL,
-    Encounter::probabilityAgainst($greg->getLevel(), $jade->getLevel()) * 100
-);
+class Lobby
+{
+    /** @var array<QueuingPlayer> */
+    public array $queuingPlayers = [];
 
-$gregLevel = $greg->getLevel();
-$jadeLevel = $jade->getLevel();
+    public function findOponents(QueuingPlayer $player): array
+    {
+        $minLevel = round($player->getRatio() / 100);
+        $maxLevel = $minLevel + $player->getRange();
 
-Encounter::setNewLevel($gregLevel, $jadeLevel, Encounter::RESULT_WINNER);
-Encounter::setNewLevel($jadeLevel, $gregLevel, Encounter::RESULT_LOSER);
+        return array_filter($this->queuingPlayers, static function (QueuingPlayer $potentialOponent) use ($minLevel, $maxLevel, $player) {
+            $playerLevel = round($potentialOponent->getRatio() / 100);
 
-$greg->setLevel($gregLevel);
-$jade->setLevel($jadeLevel);
+            return $player !== $potentialOponent && ($minLevel <= $playerLevel) && ($playerLevel <= $maxLevel);
+        });
+    }
 
-echo sprintf(
-    'Les niveaux des joueurs ont évolué vers %s pour Greg et %s pour Jade' . PHP_EOL,
-    $greg->getLevel(),
-    $jade->getLevel()
-);
+    public function addPlayer(Player $player): void
+    {
+        $this->queuingPlayers[] = new QueuingPlayer($player);
+    }
+
+    public function addPlayers(Player ...$players): void
+    {
+        foreach ($players as $player) {
+            $this->addPlayer($player);
+        }
+    }
+}
+
+class Player
+{
+    public function __construct(protected string $name, protected float $ratio = 400.0)
+    {
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    private function probabilityAgainst(self $player): float
+    {
+        return 1 / (1 + (10 ** (($player->getRatio() - $this->getRatio()) / 400)));
+    }
+
+    public function updateRatioAgainst(self $player, int $result): void
+    {
+        $this->ratio += 32 * ($result - $this->probabilityAgainst($player));
+    }
+
+    public function getRatio(): float
+    {
+        return $this->ratio;
+    }
+}
+
+class QueuingPlayer extends Player
+{
+    public function __construct(Player $player, protected int $range = 1)
+    {
+        parent::__construct($player->getName(), $player->getRatio());
+    }
+
+    public function getRange(): int
+    {
+        return $this->range;
+    }
+
+    public function upgradeRange(): void
+    {
+        $this->range = min($this->range + 1, 40);
+    }
+}
+
+$greg = new Player('greg', 400);
+$jade = new Player('jade', 476);
+
+$lobby = new Lobby();
+$lobby->addPlayers($greg, $jade);
+
+var_dump($lobby->findOponents($lobby->queuingPlayers[0]));
+
+exit(0);
