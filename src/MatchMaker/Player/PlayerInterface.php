@@ -11,7 +11,7 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\MatchMaker\Player;
+namespace App\MatchMaker\Player;
 
 interface PlayerInterface
 {
